@@ -97,12 +97,12 @@ func authzInterceptor(ctx context.Context, req any, info *grpc.UnaryServerInfo, 
 	return handler(ctx, req)
 }
 
-func newHandler(idaasConn *grpc.ClientConn) http.Handler {
+func newHandler(tknzConn *grpc.ClientConn) http.Handler {
 	grpcServer := grpc.NewServer(
 		grpc.ChainUnaryInterceptor(
 			srv.UnaryLoggerInterceptor,
 			srv.UnaryErrorInterceptor,
-			srv.NewAuthnInterceptor(idaasConn),
+			srv.NewAuthnInterceptor(tknzConn),
 			authzInterceptor,
 		),
 	)
