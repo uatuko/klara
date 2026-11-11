@@ -115,8 +115,8 @@ run\:mta:
 	go run -race ./cmd/mta/ \
 		-addr localhost:50152 \
 		-debug \
-		-idaas-addr localhost:8080 \
 		-space-id local \
+		-tknz-addr localhost:8080 \
 		$(filter-out $@,$(MAKECMDGOALS)) $(MAKEFLAGS)
 
 run\:smtpd:

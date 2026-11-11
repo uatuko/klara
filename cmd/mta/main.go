@@ -15,19 +15,17 @@ import (
 
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
-	"golang.org/x/net/http2"
-	"golang.org/x/net/http2/h2c"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
 )
 
 var (
-	addr      = flag.String("addr", ":50051", "tcp address to listen on")
-	debug     = flag.Bool("debug", false, "enable debug logs")
-	idaasAddr = flag.String("idaas-addr", "", "idaas grpc address")
-	name      = flag.String("name", "mta.local", "fqdn or address literal to identify the mta")
-	spaceId   = flag.String("space-id", "mail", "restrict api access to actors within this space")
+	addr     = flag.String("addr", ":50051", "tcp address to listen on")
+	debug    = flag.Bool("debug", false, "enable debug logs")
+	name     = flag.String("name", "mta.local", "fqdn or address literal to identify the mta")
+	spaceId  = flag.String("space-id", "mail", "restrict api access to actors within this space")
+	tknzAddr = flag.String("tknz-addr", "", "tknz grpc address")
 )
 
 func _init() error {
@@ -59,20 +57,23 @@ func main() {
 	}
 
 	var opts []grpc.DialOption
-	if strings.HasPrefix(*idaasAddr, "localhost:") {
+	if strings.HasPrefix(*tknzAddr, "localhost:") {
 		opts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	} else {
 		opts = append(opts, grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{})))
 	}
 
-	idaasConn, err := grpc.NewClient(*idaasAddr, opts...)
+	tknzConn, err := grpc.NewClient(*tknzAddr, opts...)
 	if err != nil {
-		log.Fatal().Err(err).Msg("failed to initialise idaas connection")
+		log.Fatal().Err(err).Msg("failed to initialise tknz connection")
 	}
 
 	srv := http.Server{
-		Handler: h2c.NewHandler(newHandler(idaasConn), &http2.Server{}),
+		Handler: newHandler(tknzConn),
 	}
+	srv.Protocols = &http.Protocols{}
+	srv.Protocols.SetHTTP1(true)
+	srv.Protocols.SetUnencryptedHTTP2(true)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	sigCh := make(chan os.Signal, 1)
