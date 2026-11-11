@@ -15,8 +15,6 @@ import (
 
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
-	"golang.org/x/net/http2"
-	"golang.org/x/net/http2/h2c"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
@@ -71,8 +69,11 @@ func main() {
 	}
 
 	srv := http.Server{
-		Handler: h2c.NewHandler(newHandler(tknzConn), &http2.Server{}),
+		Handler: newHandler(tknzConn),
 	}
+	srv.Protocols = &http.Protocols{}
+	srv.Protocols.SetHTTP1(true)
+	srv.Protocols.SetUnencryptedHTTP2(true)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	sigCh := make(chan os.Signal, 1)
